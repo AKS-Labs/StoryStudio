@@ -8,20 +8,19 @@
 
 Explore StoryStudio in action across its core creation pipeline:
 
+**Core Capture & Canvas**
 | Hub & Mode Selector | Camera Viewfinder | Story Canvas & Drawing |
 | :---: | :---: | :---: |
 | ![Hub Screen](app/sampledata/1.png) | ![Camera Viewfinder](app/sampledata/2.png) | ![Story Canvas](app/sampledata/3.png) |
 | **Dual Creation Hub** | **Live Camera & Zoom** | **Vector Canvas & Tools** |
 
-| Sticker Library | Caption Editor | Instagram Share & Export |
-| :---: | :---: | :---: |
-| ![Sticker Sheet](app/sampledata/4.png) | ![Caption Editor](app/sampledata/5.png) | ![Instagram Share](app/sampledata/6.png) |
-| **Project Status Badges** | **Live Caption Styles** | **Direct Social Dispatch** |
-
-| Additional Flow | | |
-| :---: | :---: | :---: |
-| ![Additional View](app/sampledata/7.png) | | |
-| **Workflow Overview** | | |
+**Editing & Sharing Workflow**
+| Sticker Library | Caption Editor |
+| :---: | :---: |
+| ![Sticker Sheet](app/sampledata/4.png) | ![Caption Editor](app/sampledata/5.png) |
+| **Project Status Badges** | **Live Caption Styles** |
+| ![Instagram Share](app/sampledata/6.png) | ![Additional View](app/sampledata/7.png) |
+| **Direct Social Dispatch** | **Workflow Overview** |
 
 ---
 
