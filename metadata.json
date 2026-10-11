@@ -1,0 +1,6 @@
+{
+  "name": "StorStudio",
+  "description": "Interactive Photo Canvas with Project Status Stickers, drawing tools, and direct Instagram Stories integration",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
