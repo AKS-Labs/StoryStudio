@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "StoryCanvas"
+rootProject.name = "StoryStudio"
 
 include(":app")

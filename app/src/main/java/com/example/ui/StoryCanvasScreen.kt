@@ -3,19 +3,16 @@ package com.example.ui
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -76,7 +73,6 @@ import com.example.model.DrawPath
 import com.example.model.StoryCaption
 import com.example.stickers.StickerSheet
 import com.example.ui.theme.AndroidifyBlack
-import com.example.ui.theme.AndroidifyGreen
 import com.example.ui.theme.AndroidifyPaleMint
 import com.example.ui.theme.AndroidifySurface
 import com.example.ui.theme.PaletteAndroidGreen
@@ -130,203 +126,28 @@ fun StoryCanvasScreen(
         }
     }
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
             .background(AndroidifyPaleMint)
     ) {
-        // Center Canvas Frame with Dashed Androidify Outline
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 74.dp, bottom = 120.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .aspectRatio(9f / 16f)
-                    .drawBehind {
-                        val stroke = Stroke(
-                            width = 3.dp.toPx(),
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(24f, 16f), 0f)
-                        )
-                        drawRoundRect(
-                            color = AndroidifyBlack,
-                            cornerRadius = CornerRadius(28.dp.toPx(), 28.dp.toPx()),
-                            style = stroke
-                        )
-                    }
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(Color.White)
-                    .testTag("story_canvas_surface")
-            ) {
-                // 1. Photo Background Layer
-                if (photoUri != null) {
-                    AsyncImage(
-                        model = photoUri,
-                        contentDescription = "Base Story Photo",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                androidx.compose.ui.graphics.Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0xFFE8F5E9),
-                                        Color(0xFFC8E6C9),
-                                        Color(0xFFA5D6A7)
-                                    )
-                                )
-                            )
-                    )
-                }
-
-                // 2. Freehand Drawing Layer
-                DrawingCanvas(
-                    isDrawingActive = isDrawingActive,
-                    currentColor = currentBrushColor,
-                    currentStrokeWidth = currentStrokeWidth,
-                    currentBrushStyle = currentBrushStyle,
-                    paths = paths,
-                    onPathCompleted = { newStroke ->
-                        paths = paths + newStroke
-                        historyManager.recordAction(CanvasAction.AddStroke(newStroke))
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // 3. Interactive Transformable Stickers Layer
-                StickerOverlay(
-                    stickers = stickers,
-                    selectedStickerId = selectedStickerId,
-                    isDrawingActive = isDrawingActive,
-                    onSelectSticker = { selectedStickerId = it },
-                    onTransformDelta = { stickerId, pan, zoom, rotationChange ->
-                        stickers = stickers.map { current ->
-                            if (current.id == stickerId) {
-                                current.copy(
-                                    offset = current.offset + pan,
-                                    scale = (current.scale * zoom).coerceIn(0.4f, 3.5f),
-                                    rotation = (current.rotation + rotationChange) % 360f
-                                )
-                            } else current
-                        }
-                    },
-                    onDeleteSticker = { idToDelete ->
-                        val toDelete = stickers.find { it.id == idToDelete }
-                        if (toDelete != null) {
-                            stickers = stickers.filter { it.id != idToDelete }
-                            if (selectedStickerId == idToDelete) selectedStickerId = null
-                            historyManager.recordAction(CanvasAction.DeleteSticker(toDelete))
-                        }
-                    },
-                    onDuplicateSticker = { original ->
-                        val duplicate = original.copy(
-                            id = UUID.randomUUID().toString(),
-                            offset = original.offset + Offset(30f, 30f),
-                            isSelected = true
-                        )
-                        stickers = stickers + duplicate
-                        selectedStickerId = duplicate.id
-                        historyManager.recordAction(CanvasAction.AddSticker(duplicate))
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // 4. Live Caption Banner Preview
-                if (caption.isVisible && caption.text.isNotBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 32.dp, start = 16.dp, end = 16.dp)
-                            .clickable { showCaptionModal = true }
-                            .testTag("story_caption_banner"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        when (caption.style) {
-                            CaptionStyle.ROUNDED_PILL -> {
-                                Box(
-                                    modifier = Modifier
-                                        .background(AndroidifyBlack.copy(alpha = 0.88f), RoundedCornerShape(32.dp))
-                                        .border(1.2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(32.dp))
-                                        .padding(horizontal = 22.dp, vertical = 10.dp)
-                                ) {
-                                    Text(
-                                        text = caption.text,
-                                        color = caption.textColor,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-                            CaptionStyle.SOLID_BLOCK -> {
-                                Box(
-                                    modifier = Modifier
-                                        .background(AndroidifyBlack, RoundedCornerShape(10.dp))
-                                        .padding(horizontal = 18.dp, vertical = 8.dp)
-                                ) {
-                                    Text(
-                                        text = caption.text,
-                                        color = caption.textColor,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-                            CaptionStyle.OUTLINE -> {
-                                Box(
-                                    modifier = Modifier
-                                        .border(2.dp, caption.textColor, RoundedCornerShape(14.dp))
-                                        .background(Color.White.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
-                                        .padding(horizontal = 18.dp, vertical = 8.dp)
-                                ) {
-                                    Text(
-                                        text = caption.text,
-                                        color = caption.textColor,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-                            CaptionStyle.TRANSPARENT -> {
-                                Text(
-                                    text = caption.text,
-                                    color = caption.textColor,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(8.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Top Navigation & Action Header (Matching Androidify Style)
+        // 1. Top App Bar: Clean header with Back button, "StoryStudio", and the "Share Story" action pill!
+        // Positioned cleanly above the image viewport with zero overlap!
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .align(Alignment.TopCenter),
+                .padding(horizontal = 14.dp, vertical = 4.dp),
             shape = RoundedCornerShape(32.dp),
             color = AndroidifySurface,
-            border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFFE0E5E0)),
+            border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFFE2EAE2)),
             shadowElevation = 2.dp
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 10.dp),
+                    .height(54.dp)
+                    .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -350,13 +171,13 @@ fun StoryCanvasScreen(
                 }
 
                 Text(
-                    text = "StorStudio",
+                    text = "StoryStudio",
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp,
                     color = AndroidifyBlack
                 )
 
-                // Share to Instagram Stories Pill Button
+                // Share Story Pill Button in the top bar (cleanly placed, zero overlap)
                 Button(
                     onClick = {
                         if (isExporting) return@Button
@@ -414,24 +235,26 @@ fun StoryCanvasScreen(
                         contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.testTag("share_instagram_button")
+                    modifier = Modifier
+                        .height(38.dp)
+                        .testTag("share_instagram_button")
                 ) {
                     if (isExporting) {
                         CircularProgressIndicator(
                             color = Color.White,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(14.dp),
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Exporting...", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Share Story", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("Share Story", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
                                 imageVector = Icons.Default.Send,
                                 contentDescription = null,
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(13.dp)
                             )
                         }
                     }
@@ -439,26 +262,202 @@ fun StoryCanvasScreen(
             }
         }
 
-        // Bottom Controls Container
-        Column(
+        // 2. Maximized Middle Story Canvas Viewport: Fills the entire space from topbar to bottombar!
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .aspectRatio(9f / 16f)
+                    .drawBehind {
+                        val stroke = Stroke(
+                            width = 3.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(24f, 16f), 0f)
+                        )
+                        drawRoundRect(
+                            color = AndroidifyBlack,
+                            cornerRadius = CornerRadius(26.dp.toPx(), 26.dp.toPx()),
+                            style = stroke
+                        )
+                    }
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(Color.White)
+                    .testTag("story_canvas_surface")
+            ) {
+                // Photo Background Layer
+                if (photoUri != null) {
+                    AsyncImage(
+                        model = photoUri,
+                        contentDescription = "Base Story Photo",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0xFFE8F5E9),
+                                        Color(0xFFC8E6C9),
+                                        Color(0xFFA5D6A7)
+                                    )
+                                )
+                            )
+                    )
+                }
+
+                // Freehand Drawing Layer
+                DrawingCanvas(
+                    isDrawingActive = isDrawingActive,
+                    currentColor = currentBrushColor,
+                    currentStrokeWidth = currentStrokeWidth,
+                    currentBrushStyle = currentBrushStyle,
+                    paths = paths,
+                    onPathCompleted = { newStroke ->
+                        paths = paths + newStroke
+                        historyManager.recordAction(CanvasAction.AddStroke(newStroke))
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Interactive Transformable Stickers Layer
+                StickerOverlay(
+                    stickers = stickers,
+                    selectedStickerId = selectedStickerId,
+                    isDrawingActive = isDrawingActive,
+                    onSelectSticker = { selectedStickerId = it },
+                    onTransformDelta = { stickerId, pan, zoom, rotationChange ->
+                        stickers = stickers.map { current ->
+                            if (current.id == stickerId) {
+                                current.copy(
+                                    offset = current.offset + pan,
+                                    scale = (current.scale * zoom).coerceIn(0.4f, 3.5f),
+                                    rotation = (current.rotation + rotationChange) % 360f
+                                )
+                            } else current
+                        }
+                    },
+                    onDeleteSticker = { idToDelete ->
+                        val toDelete = stickers.find { it.id == idToDelete }
+                        if (toDelete != null) {
+                            stickers = stickers.filter { it.id != idToDelete }
+                            if (selectedStickerId == idToDelete) selectedStickerId = null
+                            historyManager.recordAction(CanvasAction.DeleteSticker(toDelete))
+                        }
+                    },
+                    onDuplicateSticker = { original ->
+                        val duplicate = original.copy(
+                            id = UUID.randomUUID().toString(),
+                            offset = original.offset + Offset(30f, 30f),
+                            isSelected = true
+                        )
+                        stickers = stickers + duplicate
+                        selectedStickerId = duplicate.id
+                        historyManager.recordAction(CanvasAction.AddSticker(duplicate))
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Live Caption Banner Preview
+                if (caption.isVisible && caption.text.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 24.dp, start = 14.dp, end = 14.dp)
+                            .clickable { showCaptionModal = true }
+                            .testTag("story_caption_banner"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when (caption.style) {
+                            CaptionStyle.ROUNDED_PILL -> {
+                                Box(
+                                    modifier = Modifier
+                                        .background(AndroidifyBlack.copy(alpha = 0.88f), RoundedCornerShape(32.dp))
+                                        .border(1.2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(32.dp))
+                                        .padding(horizontal = 20.dp, vertical = 9.dp)
+                                ) {
+                                    Text(
+                                        text = caption.text,
+                                        color = caption.textColor,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                            CaptionStyle.SOLID_BLOCK -> {
+                                Box(
+                                    modifier = Modifier
+                                        .background(AndroidifyBlack, RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = caption.text,
+                                        color = caption.textColor,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                            CaptionStyle.OUTLINE -> {
+                                Box(
+                                    modifier = Modifier
+                                        .border(2.dp, caption.textColor, RoundedCornerShape(14.dp))
+                                        .background(Color.White.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = caption.text,
+                                        color = caption.textColor,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                            CaptionStyle.TRANSPARENT -> {
+                                Text(
+                                    text = caption.text,
+                                    color = caption.textColor,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Brush Control Bar (Visible when Draw tool is active)
+        BrushControlBar(
+            isVisible = isDrawingActive,
+            currentStyle = currentBrushStyle,
+            currentColor = currentBrushColor,
+            currentStrokeWidth = currentStrokeWidth,
+            onStyleChanged = { currentBrushStyle = it },
+            onColorChanged = { currentBrushColor = it },
+            onStrokeWidthChanged = { currentStrokeWidth = it },
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+
+        // 4. Bottom Navigation Toolbar: Sits cleanly at the bottom
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.BottomCenter)
                 .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentAlignment = Alignment.Center
         ) {
-            // Brush Control Bar (Visible when Draw tool is active)
-            BrushControlBar(
-                isVisible = isDrawingActive,
-                currentStyle = currentBrushStyle,
-                currentColor = currentBrushColor,
-                currentStrokeWidth = currentStrokeWidth,
-                onStyleChanged = { currentBrushStyle = it },
-                onColorChanged = { currentBrushColor = it },
-                onStrokeWidthChanged = { currentStrokeWidth = it }
-            )
-
-            // Canvas Toolbar with Functional Undo and Redo
             CanvasToolbar(
                 isDrawingActive = isDrawingActive,
                 brushColor = currentBrushColor,
@@ -494,13 +493,13 @@ fun StoryCanvasScreen(
             )
         }
 
-        // Sticker Picker Bottom Sheet with Figma Project Status Stickers
+        // Sticker Picker Bottom Sheet
         if (showStickerSheet) {
             StickerSheet(
                 onStickerSelected = { definition ->
                     val newSticker = CanvasSticker(
                         definition = definition,
-                        offset = Offset(280f, 550f),
+                        offset = Offset(260f, 500f),
                         scale = 1.0f,
                         rotation = 0f,
                         isSelected = true

@@ -11,12 +11,13 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Androidify soft marshmallow scalloped flower shape matching Screenshots 2 & 3.
- * Uses 10 smooth, puffy, rounded lobes without sharp valleys.
+ * Androidify soft marshmallow scalloped shape with 100% curved, rounded bumps.
+ * Uses cubic Bézier arcs with tangential control points so peaks and valleys
+ * are pillowy, smooth, and completely devoid of sharp spikes.
  */
 class ScallopShape(
-    private val lobes: Int = 10,
-    private val depthRatio: Float = 0.065f
+    private val lobes: Int = 8,
+    private val depthRatio: Float = 0.055f
 ) : Shape {
     override fun createOutline(
         size: Size,
@@ -24,53 +25,43 @@ class ScallopShape(
         density: Density
     ): Outline {
         val path = Path()
-        val centerX = size.width / 2f
-        val centerY = size.height / 2f
-        val baseRadius = minOf(centerX, centerY) * 0.94f
-        val amplitude = baseRadius * depthRatio
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+        val rBase = minOf(cx, cy) * 0.94f
+        val rOuter = rBase
+        val rInner = rBase * (1f - depthRatio)
 
-        val steps = 240
-        for (i in 0..steps) {
-            val theta = (i.toFloat() / steps) * 2f * PI.toFloat()
-            // Smooth sinusoidal modulation with dampening to ensure soft marshmallow bumps
-            val wave = cos(lobes * theta)
-            val r = baseRadius + amplitude * wave
-            val x = centerX + r * cos(theta)
-            val y = centerY + r * sin(theta)
+        val totalPoints = lobes * 2 // alternating outer peaks and inner valleys
+        val angleStep = (2f * PI / totalPoints).toFloat()
+
+        // Generate smooth cubic Bézier spline connecting rounded peaks and valleys
+        for (i in 0 until totalPoints) {
+            val a0 = i * angleStep
+            val a1 = (i + 1) * angleStep
+
+            val isPeak0 = i % 2 == 0
+            val r0 = if (isPeak0) rOuter else rInner
+            val r1 = if (isPeak0) rInner else rOuter
+
+            val x0 = cx + r0 * cos(a0)
+            val y0 = cy + r0 * sin(a0)
+            val x1 = cx + r1 * cos(a1)
+            val y1 = cy + r1 * sin(a1)
 
             if (i == 0) {
-                path.moveTo(x, y)
-            } else {
-                path.lineTo(x, y)
+                path.moveTo(x0, y0)
             }
+
+            // Tangential control points ensuring smooth rounded curvature at every vertex
+            val handleLen = (r0 + r1) / 2f * angleStep * 0.55f
+            val cp1x = x0 - handleLen * sin(a0)
+            val cp1y = y0 + handleLen * cos(a0)
+            val cp2x = x1 + handleLen * sin(a1)
+            val cp2y = y1 - handleLen * cos(a1)
+
+            path.cubicTo(cp1x, cp1y, cp2x, cp2y, x1, y1)
         }
         path.close()
-        return Outline.Generic(path)
-    }
-}
-
-/**
- * Organic hand-drawn brush doodle shape for the onboarding hero screen matching Screenshot 1.
- */
-class BrushDoodleShape : Shape {
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density
-    ): Outline {
-        val path = Path()
-        val w = size.width
-        val h = size.height
-
-        // Hand-painted organic doodle blob with expressive curves
-        path.moveTo(w * 0.50f, h * 0.08f)
-        path.cubicTo(w * 0.78f, h * 0.04f, w * 0.96f, h * 0.22f, w * 0.92f, h * 0.44f)
-        path.cubicTo(w * 0.98f, h * 0.65f, w * 0.88f, h * 0.88f, w * 0.65f, h * 0.92f)
-        path.cubicTo(w * 0.48f, h * 0.96f, w * 0.32f, h * 0.91f, w * 0.16f, h * 0.86f)
-        path.cubicTo(w * 0.04f, h * 0.72f, w * 0.02f, h * 0.52f, w * 0.08f, h * 0.36f)
-        path.cubicTo(w * 0.04f, h * 0.18f, w * 0.25f, h * 0.06f, w * 0.50f, h * 0.08f)
-        path.close()
-
         return Outline.Generic(path)
     }
 }

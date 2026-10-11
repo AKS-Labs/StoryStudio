@@ -20,7 +20,7 @@ class ExampleRobolectricTest {
   fun `verify app name resource is StoryCanvas`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val appName = context.getString(R.string.app_name)
-    assertEquals("StorStudio", appName)
+    assertEquals("StoryStudio", appName)
   }
 
   @Test
